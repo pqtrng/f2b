@@ -192,7 +192,7 @@ Project Link: [https://github.com/pqtrng/f2b](https://github.com/pqtrng/f2b)
 [issues-shield]: https://img.shields.io/github/issues/pqtrng/f2b.svg?style=for-the-badge
 [issues-url]: https://github.com/pqtrng/f2b/issues
 [license-shield]: https://img.shields.io/github/license/pqtrng/f2b.svg?style=for-the-badge
-[license-url]: https://github.com/pqtrng/f2b/blob/master/LICENSE.txt
+[license-url]: https://github.com/pqtrng/f2b/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/pqtrng
 [product-screenshot]: report/images/bmi_process.png
