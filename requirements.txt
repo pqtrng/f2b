@@ -1,0 +1,12 @@
+# local package
+-e .
+
+# external requirements
+cmake
+tensorflow
+jupyter
+pandas
+seaborn
+dlib
+print-dict
+tensorflow_addons
