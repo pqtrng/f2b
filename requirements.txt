@@ -1,12 +1,33 @@
 # local package
 -e .
+autoflake
+black
+blacken-docs
+boto3
 
 # external requirements
 cmake
-tensorflow
-jupyter
-pandas
-seaborn
 dlib
+docformatter
+dvc[all]
+dvclive
+hydra-core
+hydra_colorlog
+ipywidgets
+jupyter
+matplotlib
+nose
+notebook
+pandas
+pathlib
+pipreqs
+pre-commit
 print-dict
+pylint
+python-crontab
+PyYAML
+reorder-python-imports
+seaborn
+tensorflow
 tensorflow_addons
+wandb
