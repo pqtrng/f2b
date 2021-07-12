@@ -5,7 +5,7 @@
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = f2b
 PYTHON_INTERPRETER = python3
-
+DATASET = original
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -59,10 +59,11 @@ clean: test
 	find . -type d -name "__MACOSX" -exec rm -rf {} +
 	find . -type f -name "*.zip" -delete
 
-.PHONY: data
-## Download and process data
-data:
-	$(info Prepare datasets!)
+.PHONY: plit
+## Process and split data
+split: clean
+	$(info Split dataset!)
+	$(PYTHON_INTERPRETER) src/split.py interim processed $(DATASET)
 
 .PHONY: wandb
 wandb: clean
