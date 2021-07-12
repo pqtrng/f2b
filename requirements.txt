@@ -1,11 +1,10 @@
-# local package
 -e .
+albumentations
 autoflake
 black
 blacken-docs
 boto3
-
-# external requirements
+click
 cmake
 dlib
 docformatter
@@ -13,21 +12,27 @@ dvc[all]
 dvclive
 hydra-core
 hydra_colorlog
+hyperopt
 ipywidgets
 jupyter
 matplotlib
+natsort
 nose
 notebook
+opencv-python
 pandas
 pathlib
 pipreqs
 pre-commit
 print-dict
+Pygments
 pylint
 python-crontab
 PyYAML
+ray[tune,default]
 reorder-python-imports
 seaborn
 tensorflow
 tensorflow_addons
+tqdm
 wandb
