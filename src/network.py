@@ -72,20 +72,32 @@ def combine_model(output_network, base_network):
 def get_model(
     base_network_type="resnet_50", output_network_type="current", training_type="top"
 ):
+    """Create a model from type of network and training.
+
+    Args:
+        base_network_type (str, optional): Type of base network. Defaults to "resnet_50".
+        output_network_type (str, optional): Type of output network. Defaults to "current".
+        training_type (str, optional): Training type, can be 'all' or 'top'. Defaults to "top".
+
+    Returns:
+        model: a complete model to predict BMI
+    """
     output_network = create_output_network(network_type=output_network_type)
     base_network, num_of_layers = create_base_network(network_name=base_network_type)
-
     model = combine_model(output_network=output_network, base_network=base_network)
-
     helper.set_training_type_for_model(
-        model=model, training_type=training_type, untrained_layers=num_of_layers
+        model=model,
+        training_type=training_type,
+        num_of_untrained_layers=num_of_layers,
     )
 
     return model
 
 
 if __name__ == "__main__":
-    model = get_model(base_network_type="resnet_50", output_network_type="current")
-    # model.summary()
-    # print(len(model.layers))
-    # print(model.layers[-1] is model.layers[176])
+    model = get_model(
+        base_network_type="resnet_50",
+        output_network_type="current",
+        training_type="top",
+    )
+    model.summary()

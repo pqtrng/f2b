@@ -10,14 +10,14 @@ from src.config import Config
 @click.command()
 @click.argument("training_type")
 @click.argument("dataset")
-@click.argument("network_type")
+@click.argument("output_network_type")
 @click.argument("smoke_test")
-def train(training_type, dataset, network_type, smoke_test="False"):
+def train(training_type, dataset, output_network_type, smoke_test="False"):
     smoke_test = True if smoke_test == "True" else False
 
     model = network.get_model(
-        output_network=network.create_output_network(network_type=network_type),
-        base_network=network.create_base_network(network_name="resnet_50"),
+        base_network_type="resnet_50",
+        output_network_type=output_network_type,
         training_type=training_type,
     )
 
@@ -37,7 +37,7 @@ def train(training_type, dataset, network_type, smoke_test="False"):
         train_data=train_generator,
         valid_data=valid_generator,
         dataset=dataset,
-        network_type=network_type,
+        network_type=output_network_type,
         smoke_test=smoke_test,
         seed=Config.seed,
     )
