@@ -74,13 +74,12 @@ wandb: clean
 ## Train model
 train: wandb
 	$(info Train model)
-	$(PYTHON_INTERPRETER) train.py
+	$(PYTHON_INTERPRETER) src/train.py
 
 .PHONY: crontab
 ## Schedule cron jobs
 crontab: test
 	$(info Run scheduled jobs)
-	$(PYTHON_INTERPRETER) scheduler.py
 
 .PHONY: docker
 ## Running in a Docker container

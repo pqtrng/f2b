@@ -139,6 +139,20 @@ Conda should be installed.
   python demo.py
   ```
 
+### Docker
+
+- Build
+
+  ```sh
+  docker build . -t f2b --rm
+  ```
+
+- Run
+
+  ```sh
+  docker run --name "f2b" -d f2b
+  ```
+
 <!-- USAGE EXAMPLES -->
 ## Usage
 
