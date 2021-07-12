@@ -1,7 +1,18 @@
 import helper
 
 
-def get_generator(dataset, purpose, seed=None, augment_func=None):
+def get_generator(dataset, purpose, seed=None, augment_func=helper.keras_augment_func):
+    """Create data generator.
+
+    Args:
+        dataset (str): name of dataset to train on
+        purpose (str): purpose of this dataset
+        seed (int, optional): Random seed to reproduce experiment. Defaults to None.
+        augment_func (function, optional): augment function for input data. Defaults to keras_augment_func.
+
+    Returns:
+        [type]: [description]
+    """
     annotation_dataframe, images_dir_name = helper.get_dataset_info(
         dataset=dataset, purpose=purpose
     )

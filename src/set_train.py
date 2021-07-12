@@ -1,6 +1,7 @@
 import helper
 import optimizer
 import tensorflow as tf
+import training_callbacks
 from config import Config
 
 
@@ -33,6 +34,8 @@ def set_train(
         dataset=dataset,
         output_network_type=output_network_type,
     )
+
+    training_callbacks.get_callbacks()
 
 
 if __name__ == "__main__":

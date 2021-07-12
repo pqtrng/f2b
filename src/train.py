@@ -13,6 +13,14 @@ from src.config import Config
 @click.argument("output_network_type")
 @click.argument("smoke_test")
 def train(training_type, dataset, output_network_type, smoke_test="False"):
+    """Train model with given information.
+
+    Args:
+        training_type (str): Type of training
+        dataset (str): name of dataset
+        output_network_type (str): type of output dataset
+        smoke_test (str, optional): Whether to test code or train. Defaults to "False".
+    """
     smoke_test = True if smoke_test == "True" else False
 
     model = network.get_model(
