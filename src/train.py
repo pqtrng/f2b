@@ -2,7 +2,7 @@ import click
 import generate
 import helper
 import network
-import train_func
+import set_train
 
 from src.config import Config
 
@@ -32,12 +32,13 @@ def train(training_type, dataset, output_network_type, smoke_test="False"):
         dataset=dataset, purpose="valid", seed=Config.seed
     )
 
-    train_func.set_training(
+    set_train.set_train(
         model=model,
         train_data=train_generator,
         valid_data=valid_generator,
         dataset=dataset,
-        network_type=output_network_type,
+        output_network_type=output_network_type,
+        training_type=training_type,
         smoke_test=smoke_test,
         seed=Config.seed,
     )

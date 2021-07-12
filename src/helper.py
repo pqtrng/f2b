@@ -418,3 +418,31 @@ def set_training_type_for_model(model, training_type, num_of_untrained_layers):
         raise ValueError(
             f"{training_type} is not available. Please choose between 'top' and 'all'"
         )
+
+
+def compile_model(model, loss, optimizer, metrics):
+    """Compile model for training.
+
+    Args:
+        model       : Model to compile
+        loss        : Loss function
+        optimizer   : Optimizer of training
+        metrics     : target metric
+    """
+    model.compile(loss=loss, optimizer=optimizer, metrics=[metrics])
+
+
+def create_train_log_path(
+    training_type="top", dataset="original", output_network_type="current"
+):
+    checkpoint_path = os.path.join(
+        Config.checkpoint_model_path, training_type, dataset, output_network_type
+    )
+    tensorboard_log_dir = os.path.join(
+        Config.log_path, training_type, dataset, output_network_type
+    )
+    model_path = os.path.join(
+        Config.trained_model_path, training_type, dataset, output_network_type
+    )
+
+    return checkpoint_path, tensorboard_log_dir, model_path
