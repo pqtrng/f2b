@@ -395,3 +395,26 @@ def plot_image_from_generator(generator, number_imgs_to_show=9):
         plt.imshow((x_batch[plot_index - 1] * 255).astype(np.uint8))
         plot_index += 1
     plt.show()
+
+
+def set_training_type_for_model(model, training_type):
+    """Set training type for model. Train all layer or train only part of it.
+
+    Args:
+        model (model): Model to train
+        training_type (str): Type of training, "top" or "all"
+
+    Raises:
+        ValueError: Raise if training type is unknown
+    """
+    print(f"Training model with '{training_type}' type")
+    if training_type == "top":
+        for l in model.layers[:-1]:
+            l.trainable = False
+    elif training_type == "all":
+        for l in model.layers:
+            l.trainable = True
+    else:
+        raise ValueError(
+            f"{training_type} is not available. Please choose between 'top' and 'all'"
+        )
