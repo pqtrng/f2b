@@ -1,4 +1,4 @@
-def set_training_type():
+def set_training():
     pass
 
 

@@ -409,7 +409,7 @@ def set_training_type_for_model(model, training_type):
     """
     print(f"Training model with '{training_type}' type")
     if training_type == "top":
-        for l in model.layers[:-1]:
+        for l in model.layers[:]:
             l.trainable = False
     elif training_type == "all":
         for l in model.layers:

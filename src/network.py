@@ -1,3 +1,4 @@
+import helper
 import tensorflow as tf
 
 
@@ -49,10 +50,11 @@ def create_base_network(network_name="resnet_50"):
         )
     else:
         raise ValueError("Unknown base network name.")
-    return base_model
+
+    return base_model, len(base_model.layers)
 
 
-def get_model(output_network, base_network):
+def combine_model(output_network, base_network):
     """Combine base network and output network to create a complete model.
 
     Args:
@@ -67,8 +69,23 @@ def get_model(output_network, base_network):
     return model
 
 
+def get_model(
+    base_network_type="resnet_50", output_network_type="current", training_type="top"
+):
+    output_network = create_output_network(network_type=output_network_type)
+    base_network, num_of_layers = create_base_network(network_name=base_network_type)
+
+    model = combine_model(output_network=output_network, base_network=base_network)
+
+    helper.set_training_type_for_model(
+        model=model, training_type=training_type, untrained_layers=num_of_layers
+    )
+
+    return model
+
+
 if __name__ == "__main__":
-    base_model = create_base_network(network_name="resnet_50")
-    output_model = create_output_network(network_type="current")
-    model = get_model(output_network=output_model, base_network=base_model)
-    model.summary()
+    model = get_model(base_network_type="resnet_50", output_network_type="current")
+    # model.summary()
+    # print(len(model.layers))
+    # print(model.layers[-1] is model.layers[176])

@@ -18,6 +18,7 @@ def train(training_type, dataset, network_type, smoke_test="False"):
     model = network.get_model(
         output_network=network.create_output_network(network_type=network_type),
         base_network=network.create_base_network(network_name="resnet_50"),
+        training_type=training_type,
     )
 
     train_generator = generate.get_generator(
@@ -31,13 +32,12 @@ def train(training_type, dataset, network_type, smoke_test="False"):
         dataset=dataset, purpose="valid", seed=Config.seed
     )
 
-    train_func.set_training_type(
+    train_func.set_training(
         model=model,
         train_data=train_generator,
         valid_data=valid_generator,
         dataset=dataset,
         network_type=network_type,
-        training_type=training_type,
         smoke_test=smoke_test,
         seed=Config.seed,
     )
