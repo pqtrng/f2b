@@ -1,4 +1,5 @@
 import glob
+import math
 import os
 import pathlib
 import shutil
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 import natsort
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 import tqdm
 
 from src.config import Config
@@ -116,7 +118,7 @@ def get_subfolder_name(dir_name):
     if len(sub_dirs) == 1:
         return pathlib.Path(sub_dirs[0]).absolute()
     else:
-        raise Exception(f"There are more than one sub-directories in {dir_name}!")
+        raise ValueError(f"There are more than one sub-directories in {dir_name}!")
 
 
 def get_annotation_file(annotation_file_path):
@@ -135,7 +137,7 @@ def get_annotation_file(annotation_file_path):
     elif len(glob.glob("*.csv")) == 0:
         return None
     else:
-        raise Exception("There are more than 1 annotation file in path!")
+        raise ValueError("There are more than 1 annotation file in path!")
 
 
 def get_all_files_in_dir(dir_name, extension=None, must_sort=False):
@@ -258,3 +260,138 @@ def copy_image_from_dataframe(
     """
     for file_name in tqdm.tqdm(dataframe[column_name], total=len(dataframe.index)):
         shutil.copy(src=file_name, dst=destination)
+
+
+def get_dataset_info(
+    dataset, purpose, data_dir_name=Config.default_images_directory_name
+):
+    """Get dataset information from a given folder and purpose.
+
+    Args:
+        dataset (str): Name of dataset
+        purpose (str): Purpose of dataset
+        data_dir_name (str, optional): Name of directory which contains images. Defaults to Config.default_images_directory_name.
+
+    Returns:
+        dataframe: dataframe from from given info
+        str : path of images directory
+    """
+
+    dateset_path = os.path.join(Config.processed_data_path, dataset + "_" + purpose)
+    annotation_dataframe = pd.read_csv(
+        os.path.join(dateset_path, Config.default_annotation_file_name)
+    )
+    images_dir_name = os.path.join(dateset_path, data_dir_name)
+    return annotation_dataframe, images_dir_name
+
+
+def keras_augment_func(x):
+    """Pre processing image.
+
+    Args:
+        x (Tensor): Image for pre processing
+
+    Returns:
+        Tensor: Processed image
+    """
+    cropped_image = tf.image.stateless_random_crop(
+        value=x,
+        size=[Config.image_default_size, Config.image_default_size, 3],
+        seed=(Config.seed, Config.seed),
+    )
+
+    flipped_image = tf.image.stateless_random_flip_left_right(
+        image=cropped_image, seed=(Config.seed, Config.seed)
+    )
+
+    augmented_image = tf.keras.applications.resnet50.preprocess_input(flipped_image)
+    return augmented_image
+
+
+def get_image_processor(purpose, augment_func=keras_augment_func):
+    """Create correspond image processor for type of dataset.
+
+    Args:
+        purpose (str): Purpose of dataset, can be 'train', 'valid', 'test'
+
+    Raises:
+        ValueError: In case purpose in not specified or unknown.
+
+    Returns:
+        ImageDataGenerator: processor
+    """
+
+    if purpose == "train":
+        return tf.keras.preprocessing.image.ImageDataGenerator(
+            preprocessing_function=augment_func,
+        )
+    elif purpose == "valid":
+        return tf.keras.preprocessing.image.ImageDataGenerator(
+            preprocessing_function=tf.keras.applications.resnet50.preprocess_input
+        )
+    elif purpose == "test":
+        return tf.keras.preprocessing.image.ImageDataGenerator(
+            preprocessing_function=tf.keras.applications.resnet50.preprocess_input
+        )
+    else:
+        raise ValueError(
+            "Unknown purpose. Please set purpose to 'train', 'validate'  or 'test'."
+        )
+
+
+def create_generator(dataframe, img_dir, purpose, processor, seed=None):
+    """Create a data generator for model.
+
+    Args:
+        dataframe (dataframe): dataframe of input data
+        img_dir (str): name of images directory
+        purpose (str): purpose to use this data
+        processor (Processor): Processor for dataset
+        seed (int, optional): Random seeding number for reproducing experiment. Defaults to None.
+
+    Raises:
+        ValueError: raise in case of wrong purpose
+
+    Returns:
+        DataGenerator: a data generator for given data and purpose
+    """
+
+    if purpose == "train":
+        will_shuffle = True
+    elif purpose == "valid":
+        will_shuffle = False
+    elif purpose == "test":
+        will_shuffle = False
+    else:
+        raise ValueError("Unknown purpose")
+    generator = processor.flow_from_dataframe(
+        dataframe=dataframe,
+        directory=img_dir,
+        x_col=Config.x_col,
+        y_col=Config.y_col,
+        class_mode=Config.class_mode,
+        color_mode=Config.color_mode,
+        target_size=(Config.image_default_size, Config.image_default_size),
+        batch_size=Config.batch_size,
+        seed=seed,
+        shuffle=will_shuffle,
+    )
+    return generator
+
+
+def plot_image_from_generator(generator, number_imgs_to_show=9):
+    """Plotting data from a generator.
+
+    Args:
+        generator (ImageGenerator): Generator to plot
+        number_imgs_to_show (int, optional): Number of image to plot. Defaults to 9.
+    """
+    print("Plotting images...")
+    n_rows_cols = int(math.ceil(math.sqrt(number_imgs_to_show)))
+    plot_index = 1
+    x_batch, _ = next(generator)
+    while plot_index <= number_imgs_to_show:
+        plt.subplot(n_rows_cols, n_rows_cols, plot_index)
+        plt.imshow((x_batch[plot_index - 1] * 255).astype(np.uint8))
+        plot_index += 1
+    plt.show()
