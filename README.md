@@ -116,13 +116,13 @@ Conda should be installed.
 - Train model
 
    ```sh
-   python train_model.py <training_type> <data_set>
+   python src/train_model.py <training_type> <data_set> <output_network_type> False
    ```
 
 - Evalute model
 
    ```sh
-   python evaluate_model.py <training_type> <data_set>
+   python evaluate_model.py <training_type> <data_set> <output_network_type>
    ```
 
 ### Demo
@@ -147,11 +147,13 @@ Conda should be installed.
   docker build . -t f2b --rm
   ```
 
-- Run
+- Run container
 
   ```sh
-  docker run --name "f2b" -d f2b
+  docker run --name "f2b" -it f2b
   ```
+
+- Run train and evaluate script as normal
 
 <!-- USAGE EXAMPLES -->
 ## Usage
@@ -192,8 +194,6 @@ Project Link: [https://github.com/pqtrng/f2b](https://github.com/pqtrng/f2b)
 ## Acknowledgements
 
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
-- [Ray](https://docs.ray.io/en/master/index.html#)
-- [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
