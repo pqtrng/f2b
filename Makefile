@@ -81,9 +81,15 @@ train: split
 	$(info Train model)
 	$(PYTHON_INTERPRETER) src/train.py $(TRAINING_TYPE) $(DATASET) $(OUTPUT_NETWORK_TYPE) $(SMOKE_TEST)
 
+.PHONY: evaluate
+## Evaluate model
+evaluate: train
+	$(info Evaluate model)
+	$(PYTHON_INTERPRETER) src/evaluate.py $(TRAINING_TYPE) $(DATASET) $(OUTPUT_NETWORK_TYPE)
+
 .PHONY: crontab
 ## Schedule cron jobs
-crontab: test
+crontab: clean
 	$(info Run scheduled jobs)
 
 .PHONY: docker
