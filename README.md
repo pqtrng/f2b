@@ -116,13 +116,13 @@ Conda should be installed.
 - Train model
 
    ```sh
-   python src/train_model.py <training_type> <data_set> <output_network_type> False
+   python src/train_model.py top original current False
    ```
 
 - Evalute model
 
    ```sh
-   python evaluate_model.py <training_type> <data_set> <output_network_type>
+   python evaluate_model.py top original current
    ```
 
 ### Demo
@@ -130,13 +130,7 @@ Conda should be installed.
 - Local
 
   ```sh
-  python demo.py
-  ```
-
-- Online
-
-  ```sh
-  python demo.py
+  python demo.py top original current
   ```
 
 ### Docker

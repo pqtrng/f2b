@@ -31,6 +31,7 @@ python-crontab
 PyYAML
 ray[tune,default]
 reorder-python-imports
+rope
 seaborn
 tensorflow
 tensorflow_addons
