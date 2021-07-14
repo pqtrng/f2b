@@ -12,7 +12,7 @@ from src.config import Config
 @click.argument("dataset")
 @click.argument("output_network_type")
 @click.argument("smoke_test")
-def train(training_type, dataset, output_network_type, smoke_test="False"):
+def train(training_type, dataset, output_network_type, smoke_test):
     """Train model with given information.
 
     Args:

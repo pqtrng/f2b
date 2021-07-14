@@ -105,7 +105,7 @@ docker: clean
 	$(info Run in Docker)
 	docker build . -t f2b --rm
 	docker stop f2b || true && docker rm f2b || true
-	docker run -it --name "f2b" f2b
+	docker run --name "f2b" --gpus all -it f2b bash
 
 
 .PHONY: create_environment

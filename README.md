@@ -144,7 +144,7 @@ Conda should be installed.
 - Run container
 
   ```sh
-  docker run --name "f2b" -it f2b
+  docker run --name "f2b" --gpus all -it f2b bash
   ```
 
 - Run train and evaluate script as normal
