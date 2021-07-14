@@ -16,8 +16,22 @@ class FBLearningRateScheduler(Callback):
             self.model.optimizer.learning_rate, self.initial_learning_rate
         )
 
+    def on_train_batch_begin(self, batch, logs=None):
+        if self.verbose > 0:
+            print(
+                "\n\tBatch %05d: LearningRateScheduler reducing learning "
+                "rate to %s."
+                % (batch + 1, self.model.optimizer.learning_rate.numpy().item())
+            )
+
     def on_train_batch_end(self, batch, logs=None):
         learning_rate = self.initial_learning_rate * tf.pow(
             ((batch + 1) * self.gamma + 1), -self.power
         )
         tf.keras.backend.set_value(self.model.optimizer.learning_rate, learning_rate)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        logs["learning_rate"] = tf.keras.backend.get_value(
+            self.model.optimizer.learning_rate
+        )

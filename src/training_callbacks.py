@@ -97,6 +97,7 @@ def get_callbacks(
     tensorboard_log_dir,
     training_type="top",
     dataset="original",
+    metric=Config.metric,
     smoke_test=True,
     seed=Config.seed,
 ):
@@ -121,6 +122,7 @@ def get_callbacks(
             checkpoint_path=checkpoint_path,
             training_type=training_type,
             dataset=dataset,
+            metric=metric,
             seed=seed,
         )
     )

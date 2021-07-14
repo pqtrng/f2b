@@ -5,7 +5,10 @@
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = f2b
 PYTHON_INTERPRETER = python3
+TRAINING_TYPE = top
+OUTPUT_NETWORK_TYPE = current
 DATASET = original
+SMOKE_TEST = True
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -43,6 +46,7 @@ githook: lint
 ## Check all files before commit
 check: githook
 	pre-commit run --all-files
+	git add .
 
 .PHONY: test
 ## Test code
@@ -73,9 +77,9 @@ wandb: clean
 
 .PHONY: train
 ## Train model
-train: wandb
+train: split
 	$(info Train model)
-	$(PYTHON_INTERPRETER) src/train.py
+	$(PYTHON_INTERPRETER) src/train.py $(TRAINING_TYPE) $(DATASET) $(OUTPUT_NETWORK_TYPE) $(SMOKE_TEST)
 
 .PHONY: crontab
 ## Schedule cron jobs
