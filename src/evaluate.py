@@ -5,8 +5,6 @@ import click
 import generate
 import helper
 import print_dict
-import tensorflow as tf
-import tensorflow_addons
 
 from src.config import Config
 
@@ -23,15 +21,10 @@ def evaluate_model(training_type, dataset, output_network_type):
         dataset (str): name of dataset
         output_network_type (str): type of output network
     """
-    dir_name = os.path.join(
-        Config.trained_model_path, training_type, dataset, output_network_type
-    )
-
-    file_name = helper.get_all_files_in_dir(dir_name=dir_name, extension=".h5")[0]
-
-    model = tf.keras.models.load_model(
-        filepath=os.path.join(dir_name, file_name),
-        custom_objects={"Addons>SGDW": tensorflow_addons.optimizers.SGDW},
+    model, dir_name = helper.get_trained_model(
+        training_type=training_type,
+        dataset=dataset,
+        output_network_type=output_network_type,
     )
 
     result = model.evaluate(
