@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import glob
 import math
@@ -11,6 +12,7 @@ import natsort
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import tensorflow_addons
 import tqdm
 
 from src.config import Config
@@ -538,3 +540,69 @@ def clean_up_dir(path_to_dir):
         shutil.rmtree(path_to_dir)
     except OSError as e:
         print("Error: %s - %s." % (e.filename, e.strerror))
+
+
+def get_trained_model(training_type, dataset, output_network_type):
+    """Get trained model.
+
+    Args:
+        training_type (str): Type of training
+        dataset (str): name of dataset
+        output_network_type (str): Type of output network
+
+    Returns:
+        model: Trained model
+        str: path to saved model
+    """
+    dir_name = os.path.join(
+        Config.trained_model_path, training_type, dataset, output_network_type
+    )
+
+    file_name = get_all_files_in_dir(dir_name=dir_name, extension=".h5")[0]
+
+    model = tf.keras.models.load_model(
+        filepath=os.path.join(dir_name, file_name),
+        custom_objects={"Addons>SGDW": tensorflow_addons.optimizers.SGDW},
+    )
+
+    return model, dir_name
+
+
+def draw_label(
+    image, point, label, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, thickness=2
+):
+    """Draw label on image.
+
+    Args:
+        image (Image): Input image
+        point (Tuple): Index of faces
+        label (str): BMI value
+        font (str, optional): Defaults to cv2.FONT_HERSHEY_SIMPLEX.
+        font_scale (int, optional): Defaults to 1.
+        thickness (int, optional): Defaults to 2.
+    """
+    size = cv2.getTextSize(label, font, font_scale, thickness)[0]
+    x, y = point
+    cv2.rectangle(image, (x, y - size[1]), (x + size[0], y), (255, 0, 0), cv2.FILLED)
+    cv2.putText(image, label, point, font, font_scale, (255, 255, 255), thickness)
+
+
+@contextlib.contextmanager
+def video_capture(*args, **kwargs):
+    cap = cv2.VideoCapture(*args, **kwargs)
+    try:
+        yield cap
+    finally:
+        cap.release()
+
+
+def yield_images_from_camera():
+    with video_capture(0) as cap:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        while True:
+            ret, img = cap.read()
+            if not ret:
+                raise RuntimeError("Failed to capture image")
+            yield img

@@ -87,6 +87,13 @@ evaluate: train
 	$(info Evaluate model)
 	$(PYTHON_INTERPRETER) src/evaluate.py $(TRAINING_TYPE) $(DATASET) $(OUTPUT_NETWORK_TYPE)
 
+
+.PHONY: demo
+## Evaluate model
+demo: clean
+	$(info Evaluate model)
+	$(PYTHON_INTERPRETER) src/demo.py $(TRAINING_TYPE) $(DATASET) $(OUTPUT_NETWORK_TYPE)
+
 .PHONY: crontab
 ## Schedule cron jobs
 crontab: clean

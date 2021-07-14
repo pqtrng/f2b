@@ -45,7 +45,7 @@ class Config:
     power = 0.75
     momentum = 0.9
     useful_columns = ["height", "weight", "image-src", "bmi"]
-    margin = 0.0
+    margin = 0.1
     image_default_size = 224
     train_test_split = 1 - TEST_RATIO  # 0.95
     train_val_split = (
@@ -67,6 +67,7 @@ class Config:
     default_images_directory_name = "images"
     default_path_column_name = "path"
     default_image_column_name = "name"
+    number_of_frames = 24
 
 
 if __name__ == "__main__":
