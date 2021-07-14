@@ -1,3 +1,4 @@
+import datetime
 import glob
 import math
 import os
@@ -395,3 +396,145 @@ def plot_image_from_generator(generator, number_imgs_to_show=9):
         plt.imshow((x_batch[plot_index - 1] * 255).astype(np.uint8))
         plot_index += 1
     plt.show()
+
+
+def set_training_type_for_model(model, training_type, num_of_untrained_layers):
+    """Set training type for model. Train all layer or train only part of it.
+
+    Args:
+        model (model): Model to train
+        training_type (str): Type of training, "top" or "all"
+
+    Raises:
+        ValueError: Raise if training type is unknown
+    """
+    print(f"Training model with '{training_type}' type")
+    if training_type == "top":
+        for l in model.layers[:num_of_untrained_layers]:
+            l.trainable = False
+    elif training_type == "all":
+        for l in model.layers:
+            l.trainable = True
+    else:
+        raise ValueError(
+            f"{training_type} is not available. Please choose between 'top' and 'all'"
+        )
+
+
+def compile_model(model, loss, optimizer, metrics):
+    """Compile model for training.
+
+    Args:
+        model       : Model to compile
+        loss        : Loss function
+        optimizer   : Optimizer of training
+        metrics     : target metric
+    """
+    model.compile(loss=loss, optimizer=optimizer, metrics=[metrics])
+
+
+def create_train_log_path(
+    training_type="top", dataset="original", output_network_type="current"
+):
+    checkpoint_path = os.path.join(
+        Config.checkpoint_model_path, training_type, dataset, output_network_type
+    )
+    tensorboard_log_dir = os.path.join(
+        Config.log_path, training_type, dataset, output_network_type
+    )
+    model_path = os.path.join(
+        Config.trained_model_path, training_type, dataset, output_network_type
+    )
+
+    return checkpoint_path, tensorboard_log_dir, model_path
+
+
+def get_best_model(dir_name):
+    """Get the best model from model checkpoint folder. Normally it's the last
+    saved model in folder.
+
+    Args:
+        dir (String, optional): Directory to get the best trained model. Defaults to Config.checkpoint_model_path.
+
+    Returns:
+        str: name of best model
+    """
+    h5_files = []
+    for _, _, files in os.walk(dir_name):
+        for file_name in files:
+            if ".h5" in file_name:
+                h5_files.append(file_name)
+
+    h5_files = sorted(h5_files, key=lambda x: float(x.split(":")[-1][:-3]))
+    return h5_files[0]
+
+
+def save_trained_model(training_type, dataset, output_network_type):
+    """Save the best model after training to trained folder for later evaluate.
+
+    Args:
+        training_type (str): type of training
+        dataset (str): name of dataset
+        output_network_type (str): type of output network
+
+    Returns:
+        str: time of saved
+        str: target value for retrieving later
+    """
+
+    source = os.path.join(
+        Config.checkpoint_model_path, training_type, dataset, output_network_type
+    )
+
+    destination = checking_dir(
+        os.path.join(
+            Config.trained_model_path, training_type, dataset, output_network_type
+        )
+    )
+
+    best_model = get_best_model(dir_name=source)
+    time_slot = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M")
+    print(f"Moving best model {best_model} from {source} to {destination}")
+    os.rename(
+        os.path.join(source, best_model),
+        os.path.join(destination, time_slot + "-" + best_model),
+    )
+    return time_slot, best_model.split(":")[-1][:-3]
+
+
+def save_training_log(
+    time_slot, training_type, dataset, output_network_type, metric, history, save_path
+):
+    """Save training history as csv file.
+
+    Args:
+        time_slot (str): time of saving
+        training_type (str): type of training
+        dataset (str): name of datasset
+        output_network_type (str): type of output network
+        metric (str): target metric
+        history (history): Logs return from training
+        save_path (str): save path, normally with saved model path
+    """
+    history_file_name = f"{time_slot}-type:{training_type}-data:{dataset}-network:{output_network_type}-metric:{metric}-"
+
+    pd.DataFrame.from_dict(history.history).to_csv(
+        os.path.join(
+            save_path,
+            history_file_name + "history.csv",
+        ),
+        index=False,
+    )
+
+
+def clean_up_dir(path_to_dir):
+    """Delete all files in the directory.
+
+    Args:
+        path_to_dir (str): Path to directory
+    """
+    try:
+        print(f"\n\n\tClean up{path_to_dir}\n\n")
+        shutil.rmtree(path_to_dir)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
