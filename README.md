@@ -85,7 +85,9 @@ To get a local copy up and running follow these simple steps.
 
 Conda should be installed.
 
-- conda
+- Ubuntu
+
+- Conda
 
   ```sh
   bash Anaconda-latest-Linux-x86_64.sh
