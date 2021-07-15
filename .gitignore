@@ -120,9 +120,16 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+.vscode/
+
 # Pyre type checker
 .pyre/
-data/
-.vscode/
-logs/
-models/
+data/*
+!data/external/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+
+logs/*
+models/*
+!models/trained/.gitkeep
