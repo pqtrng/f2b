@@ -30,7 +30,13 @@ def plot_idx(idx, dataframe):
     plt.imshow(reverse_color)
 
 
-def plot_batch_images(batch_size, dataframe):
+def plot_batch_images(
+    batch_size,
+    dataframe,
+    export_path=None,
+    starting_idx=505,
+    columns=["height", "weight", "BMI"],
+):
     """Plot 16 images in the batch, along with the corresponding labels.
 
     Args:
@@ -41,17 +47,20 @@ def plot_batch_images(batch_size, dataframe):
     fig = plt.figure(figsize=(20, batch_size))
     for idx in np.arange(batch_size):
         ax = fig.add_subplot(4, batch_size // 4, idx + 1, xticks=[], yticks=[])
-        plot_idx(idx + 505, dataframe)
-        if "height" in dataframe.columns and "weight" in dataframe.columns:
-            ax.set_title(
-                "H:{:.1f}    W:{:.1f}    BMI:{:.2f}".format(
-                    dataframe.iloc[idx + 505].height,
-                    dataframe.iloc[idx + 505].weight,
-                    dataframe.iloc[idx + 505].BMI,
-                )
+        plot_idx(idx + starting_idx, dataframe)
+        # if "height" in dataframe.columns and "weight" in dataframe.columns:
+        ax.set_title(
+            "BMI:{:.1f} - Pre:{:.1f} - Err:{:.4f}".format(
+                dataframe.iloc[idx + starting_idx][columns[0]],
+                dataframe.iloc[idx + starting_idx][columns[1]],
+                dataframe.iloc[idx + starting_idx][columns[2]],
             )
-        else:
-            ax.set_title("BMI:{:.2f}".format(dataframe.iloc[idx].BMI))
+        )
+        # else:
+        #     ax.set_title("BMI:{:.2f}".format(dataframe.iloc[idx].BMI))
+
+    if export_path:
+        plt.savefig(os.path.join(export_path, "sample_result.png"))
 
 
 def checking_dir(dir_name):
@@ -606,3 +615,76 @@ def yield_images_from_camera():
             if not ret:
                 raise RuntimeError("Failed to capture image")
             yield img
+
+
+def create_data_generator_from_path(data_path):
+    """Create ImageGenerator from a data path.
+
+    Args:
+        data_path (str): Path to dataset
+
+    Returns:
+        DataGenerator: Data generator for model
+    """
+    image_processor = tf.keras.preprocessing.image.ImageDataGenerator(
+        preprocessing_function=tf.keras.applications.resnet50.preprocess_input
+    )
+
+    df = pd.read_csv(get_annotation_file(annotation_file_path=data_path))
+
+    generator = image_processor.flow_from_dataframe(
+        dataframe=df,
+        directory=os.path.join(data_path, "images"),
+        x_col=Config.x_col,
+        y_col=Config.y_col,
+        class_mode=Config.class_mode,
+        color_mode=Config.color_mode,
+        target_size=(Config.image_default_size, Config.image_default_size),
+        batch_size=Config.batch_size,
+        seed=Config.seed,
+        shuffle=False,
+    )
+
+    return generator, df
+
+
+def predict_bmi(training_type, dataset, output_network_type, data_path):
+    """
+    Args:
+        training_type (str): Type of training
+        dataset (str): name of dataset
+        output_network_type (str): Type of output network
+
+    Returns:
+        dataframe: annotation dataframe with predicted value
+    """
+    model, exporting_path = get_trained_model(
+        training_type=training_type,
+        dataset=dataset,
+        output_network_type=output_network_type,
+    )
+
+    data_generator, df = create_data_generator_from_path(data_path=data_path)
+
+    result = model.predict(
+        x=data_generator,
+        batch_size=Config.batch_size,
+        workers=Config.num_of_workers,
+        verbose=1,
+    )
+
+    predicted_df = pd.DataFrame(result, columns=["predicted"])
+    df = pd.concat([df, predicted_df], axis=1)
+    df.drop(
+        labels=df.columns.difference(["image", "bmi", "predicted", "path"]),
+        axis=1,
+        inplace=True,
+    )
+    df["error"] = (df["predicted"] - df["bmi"]).abs()
+    df = df.sort_values(by=["error"])
+
+    df.drop(labels=["path"], axis=1).to_csv(
+        path_or_buf=os.path.join(exporting_path, str(dataset) + "_evaluate_result.csv"),
+        index=False,
+    )
+    return df, exporting_path

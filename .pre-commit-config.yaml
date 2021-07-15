@@ -31,7 +31,7 @@ repos:
             description: Forces to replace line ending by the UNIX 'lf' character.
           - id: check-added-large-files
             args:
-                - --maxkb=500
+                - --maxkb=5000
           - id: no-commit-to-branch
             args: [--branch, staging]
 

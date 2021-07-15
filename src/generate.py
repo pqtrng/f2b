@@ -11,7 +11,7 @@ def get_generator(dataset, purpose, seed=None, augment_func=helper.keras_augment
         augment_func (function, optional): augment function for input data. Defaults to keras_augment_func.
 
     Returns:
-        [type]: [description]
+        DataGenerator: Data generator for model
     """
     annotation_dataframe, images_dir_name = helper.get_dataset_info(
         dataset=dataset, purpose=purpose
