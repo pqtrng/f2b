@@ -8,7 +8,7 @@ PYTHON_INTERPRETER = python3
 TRAINING_TYPE = top
 OUTPUT_NETWORK_TYPE = current
 DATASET = original
-SMOKE_TEST = True
+SMOKE_TEST = False
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
