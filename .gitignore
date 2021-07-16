@@ -133,3 +133,5 @@ data/*
 logs/*
 models/*
 !models/trained/.gitkeep
+
+report/evaluate/*

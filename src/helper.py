@@ -49,6 +49,8 @@ def plot_batch_images(
 
     fig = plt.figure(figsize=(20, batch_size))
     for idx in np.arange(batch_size):
+        if idx >= dataframe.shape[0]:
+            break
         ax = fig.add_subplot(
             int(batch_size ** (0.5)),
             int(batch_size ** (0.5)),
@@ -72,7 +74,7 @@ def plot_batch_images(
         plt.savefig(os.path.join(export_path, "sample_result.png"))
 
 
-def checking_dir(dir_name):
+def checking_dir(dir_name, verbose=False):
     """Checking if a directory is existed, if not create one.
 
     Args:
@@ -83,7 +85,8 @@ def checking_dir(dir_name):
         dir (str): checked directory
     """
     if not os.path.exists(dir_name):
-        # print(f"{dir_name} is not existed. Creating it!")
+        if verbose:
+            print(f"{dir_name} is not existed. Creating it!")
         os.makedirs(dir_name)
 
     return dir_name
@@ -125,7 +128,7 @@ def create_output_path(output_filepath, dataset_dir_name):
     )
 
 
-def get_subfolder_name(dir_name, allow_many=False):
+def get_subfolder_name(dir_name, allow_many=False, verbose=False):
     """Get the sub-directory inside the given directory.
 
     Args:
@@ -142,7 +145,8 @@ def get_subfolder_name(dir_name, allow_many=False):
         if not allow_many:
             raise ValueError(f"There are more than one sub-directories in {dir_name}!")
         else:
-            print(f"There are more than one sub-directories in {dir_name}!")
+            if verbose:
+                print(f"There are more than one sub-directories in {dir_name}!")
             return [pathlib.Path(sub_dir).absolute() for sub_dir in sub_dirs]
 
 
@@ -204,7 +208,7 @@ def get_images_name(
     return image_path_name_df
 
 
-def create_dataframe(annotation_file_path, images_dir_name):
+def create_dataframe(annotation_file_path, images_dir_name, verbose=False):
     """Create dataframe with images directory and annotation file.
 
     Args:
@@ -226,12 +230,13 @@ def create_dataframe(annotation_file_path, images_dir_name):
 
     # Rename all columns to lower case
     full_df.columns = full_df.columns.str.lower()
-    # print(f"Full dataframe has shape: {full_df.shape}.")
-    print(full_df.head())
+    if verbose:
+        print(f"Full dataframe has shape: {full_df.shape}.")
+        print(full_df.head())
     return full_df
 
 
-def split_dataframe(dataframe, first_dest_path, second_dest_path):
+def split_dataframe(dataframe, first_dest_path, second_dest_path, verbose=False):
     """Split a dataframe into 2 set.
 
     Args:
@@ -254,10 +259,10 @@ def split_dataframe(dataframe, first_dest_path, second_dest_path):
 
     first_dataframe = pd.concat([train_df_female, train_df_male])
     second_dataframe = dataframe.drop(first_dataframe.index)
-
-    print(
-        f"Splitting dataframe into \n\tfirst_set: {len(first_dataframe)} files. \n\t\tNumber of males: {len(first_dataframe[first_dataframe.image.str.contains('^m')])} files.\n\t\tNumber of females: {len(first_dataframe[first_dataframe.image.str.contains('^f')])} files.\n\tsecond_set: {len(second_dataframe)} files.\n\t\tNumber of males: {len(second_dataframe[second_dataframe.image.str.contains('^m')])} files. \n\t\tNumber of females: {len(second_dataframe[second_dataframe.image.str.contains('^f')])} files."
-    )
+    if verbose:
+        print(
+            f"Splitting dataframe into \n\tfirst_set: {len(first_dataframe)} files. \n\t\tNumber of males: {len(first_dataframe[first_dataframe.image.str.contains('^m')])} files.\n\t\tNumber of females: {len(first_dataframe[first_dataframe.image.str.contains('^f')])} files.\n\tsecond_set: {len(second_dataframe)} files.\n\t\tNumber of males: {len(second_dataframe[second_dataframe.image.str.contains('^m')])} files. \n\t\tNumber of females: {len(second_dataframe[second_dataframe.image.str.contains('^f')])} files."
+        )
 
     first_dataframe.to_csv(
         os.path.join(first_dest_path, Config.default_annotation_file_name),
@@ -661,19 +666,18 @@ def create_data_generator_from_path(data_path):
     return generator, df
 
 
-def predict_bmi(model, test_data_path, exporting_path):
+def predict_bmi(model, test_data_path, export_path=None):
     """
     Args:
         model (Keras model): model for testing
         test_data_path (str): path to test data set
-        exporting_path (str): Place to save result
+        export_path (str): Place to save result
 
     Returns:
         dataframe: annotation dataframe with predicted value
     """
 
     data_generator, df = create_data_generator_from_path(data_path=test_data_path)
-
     result = model.predict(
         x=data_generator,
         batch_size=Config.batch_size,
@@ -690,11 +694,22 @@ def predict_bmi(model, test_data_path, exporting_path):
     )
     df["error"] = (df["predicted"] - df["bmi"]).abs()
     df = df.sort_values(by=["error"])
+    if export_path:
+        export_path = checking_dir(dir_name=export_path)
 
-    df.drop(labels=["path"], axis=1).to_csv(
-        path_or_buf=os.path.join(exporting_path, "evaluate_result.csv"),
-        index=False,
-    )
+        df.to_csv(
+            path_or_buf=os.path.join(export_path, "evaluate_result.csv"),
+            index=False,
+        )
+
+        df["predicted"].describe().to_json(
+            path_or_buf=os.path.join(export_path, "predicted_stat.json"), indent=4
+        )
+
+        df["error"].describe().to_json(
+            path_or_buf=os.path.join(export_path, "error_stat.json"), indent=4
+        )
+
     return df
 
 

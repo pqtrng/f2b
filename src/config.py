@@ -31,10 +31,9 @@ class Config:
     log_path = os.path.join(root, "logs")
     history_path = os.path.join(log_path, "history")
 
-    # Path to reports
-    report_path = os.path.join(root, "reports")
+    # Path to report
+    report_path = os.path.join(root, "report")
     figure_path = os.path.join(report_path, "figures")
-    thesis_path = os.path.join(root, "thesis")
 
     # Other variables
     batch_size = 16
