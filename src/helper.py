@@ -7,6 +7,7 @@ import pathlib
 import shutil
 
 import cv2
+import dlib
 import matplotlib.pyplot as plt
 import natsort
 import numpy as np
@@ -16,6 +17,8 @@ import tensorflow_addons
 import tqdm
 
 from src.config import Config
+
+face_detector = dlib.get_frontal_face_detector()
 
 
 def plot_idx(idx, dataframe):
@@ -30,7 +33,13 @@ def plot_idx(idx, dataframe):
     plt.imshow(reverse_color)
 
 
-def plot_batch_images(batch_size, dataframe):
+def plot_batch_images(
+    batch_size,
+    dataframe,
+    export_path=None,
+    starting_idx=505,
+    columns=["height", "weight", "BMI"],
+):
     """Plot 16 images in the batch, along with the corresponding labels.
 
     Args:
@@ -40,21 +49,32 @@ def plot_batch_images(batch_size, dataframe):
 
     fig = plt.figure(figsize=(20, batch_size))
     for idx in np.arange(batch_size):
-        ax = fig.add_subplot(4, batch_size // 4, idx + 1, xticks=[], yticks=[])
-        plot_idx(idx + 505, dataframe)
-        if "height" in dataframe.columns and "weight" in dataframe.columns:
-            ax.set_title(
-                "H:{:.1f}    W:{:.1f}    BMI:{:.2f}".format(
-                    dataframe.iloc[idx + 505].height,
-                    dataframe.iloc[idx + 505].weight,
-                    dataframe.iloc[idx + 505].BMI,
-                )
+        if idx >= dataframe.shape[0]:
+            break
+        ax = fig.add_subplot(
+            int(batch_size ** (0.5)),
+            int(batch_size ** (0.5)),
+            idx + 1,
+            xticks=[],
+            yticks=[],
+        )
+        plot_idx(idx + starting_idx, dataframe)
+        # if "height" in dataframe.columns and "weight" in dataframe.columns:
+        ax.set_title(
+            "BMI:{:.1f} - Pre:{:.1f} - Err:{:.4f}".format(
+                dataframe.iloc[idx + starting_idx][columns[0]],
+                dataframe.iloc[idx + starting_idx][columns[1]],
+                dataframe.iloc[idx + starting_idx][columns[2]],
             )
-        else:
-            ax.set_title("BMI:{:.2f}".format(dataframe.iloc[idx].BMI))
+        )
+        # else:
+        #     ax.set_title("BMI:{:.2f}".format(dataframe.iloc[idx].BMI))
+
+    if export_path:
+        plt.savefig(os.path.join(export_path, "sample_result.png"))
 
 
-def checking_dir(dir_name):
+def checking_dir(dir_name, verbose=False):
     """Checking if a directory is existed, if not create one.
 
     Args:
@@ -65,7 +85,8 @@ def checking_dir(dir_name):
         dir (str): checked directory
     """
     if not os.path.exists(dir_name):
-        # print(f"{dir_name} is not existed. Creating it!")
+        if verbose:
+            print(f"{dir_name} is not existed. Creating it!")
         os.makedirs(dir_name)
 
     return dir_name
@@ -107,7 +128,7 @@ def create_output_path(output_filepath, dataset_dir_name):
     )
 
 
-def get_subfolder_name(dir_name):
+def get_subfolder_name(dir_name, allow_many=False, verbose=False):
     """Get the sub-directory inside the given directory.
 
     Args:
@@ -121,7 +142,12 @@ def get_subfolder_name(dir_name):
     if len(sub_dirs) == 1:
         return pathlib.Path(sub_dirs[0]).absolute()
     else:
-        raise ValueError(f"There are more than one sub-directories in {dir_name}!")
+        if not allow_many:
+            raise ValueError(f"There are more than one sub-directories in {dir_name}!")
+        else:
+            if verbose:
+                print(f"There are more than one sub-directories in {dir_name}!")
+            return [pathlib.Path(sub_dir).absolute() for sub_dir in sub_dirs]
 
 
 def get_annotation_file(annotation_file_path):
@@ -182,7 +208,7 @@ def get_images_name(
     return image_path_name_df
 
 
-def create_dataframe(annotation_file_path, images_dir_name):
+def create_dataframe(annotation_file_path, images_dir_name, verbose=False):
     """Create dataframe with images directory and annotation file.
 
     Args:
@@ -204,12 +230,13 @@ def create_dataframe(annotation_file_path, images_dir_name):
 
     # Rename all columns to lower case
     full_df.columns = full_df.columns.str.lower()
-    # print(f"Full dataframe has shape: {full_df.shape}.")
-    print(full_df.head())
+    if verbose:
+        print(f"Full dataframe has shape: {full_df.shape}.")
+        print(full_df.head())
     return full_df
 
 
-def split_dataframe(dataframe, first_dest_path, second_dest_path):
+def split_dataframe(dataframe, first_dest_path, second_dest_path, verbose=False):
     """Split a dataframe into 2 set.
 
     Args:
@@ -232,10 +259,10 @@ def split_dataframe(dataframe, first_dest_path, second_dest_path):
 
     first_dataframe = pd.concat([train_df_female, train_df_male])
     second_dataframe = dataframe.drop(first_dataframe.index)
-
-    print(
-        f"Splitting dataframe into \n\tfirst_set: {len(first_dataframe)} files. \n\t\tNumber of males: {len(first_dataframe[first_dataframe.image.str.contains('^m')])} files.\n\t\tNumber of females: {len(first_dataframe[first_dataframe.image.str.contains('^f')])} files.\n\tsecond_set: {len(second_dataframe)} files.\n\t\tNumber of males: {len(second_dataframe[second_dataframe.image.str.contains('^m')])} files. \n\t\tNumber of females: {len(second_dataframe[second_dataframe.image.str.contains('^f')])} files."
-    )
+    if verbose:
+        print(
+            f"Splitting dataframe into \n\tfirst_set: {len(first_dataframe)} files. \n\t\tNumber of males: {len(first_dataframe[first_dataframe.image.str.contains('^m')])} files.\n\t\tNumber of females: {len(first_dataframe[first_dataframe.image.str.contains('^f')])} files.\n\tsecond_set: {len(second_dataframe)} files.\n\t\tNumber of males: {len(second_dataframe[second_dataframe.image.str.contains('^m')])} files. \n\t\tNumber of females: {len(second_dataframe[second_dataframe.image.str.contains('^f')])} files."
+        )
 
     first_dataframe.to_csv(
         os.path.join(first_dest_path, Config.default_annotation_file_name),
@@ -606,3 +633,332 @@ def yield_images_from_camera():
             if not ret:
                 raise RuntimeError("Failed to capture image")
             yield img
+
+
+def create_data_generator_from_path(data_path):
+    """Create ImageGenerator from a data path.
+
+    Args:
+        data_path (str): Path to dataset
+
+    Returns:
+        DataGenerator: Data generator for model
+    """
+    image_processor = tf.keras.preprocessing.image.ImageDataGenerator(
+        preprocessing_function=tf.keras.applications.resnet50.preprocess_input
+    )
+
+    df = pd.read_csv(get_annotation_file(annotation_file_path=data_path))
+
+    generator = image_processor.flow_from_dataframe(
+        dataframe=df,
+        directory=os.path.join(data_path, "images"),
+        x_col=Config.x_col,
+        y_col=Config.y_col,
+        class_mode=Config.class_mode,
+        color_mode=Config.color_mode,
+        target_size=(Config.image_default_size, Config.image_default_size),
+        batch_size=Config.batch_size,
+        seed=Config.seed,
+        shuffle=False,
+    )
+
+    return generator, df
+
+
+def predict_bmi(model, test_data_path, export_path=None):
+    """
+    Args:
+        model (Keras model): model for testing
+        test_data_path (str): path to test data set
+        export_path (str): Place to save result
+
+    Returns:
+        dataframe: annotation dataframe with predicted value
+    """
+
+    data_generator, df = create_data_generator_from_path(data_path=test_data_path)
+    result = model.predict(
+        x=data_generator,
+        batch_size=Config.batch_size,
+        workers=Config.num_of_workers,
+        verbose=1,
+    )
+
+    predicted_df = pd.DataFrame(result, columns=["predicted"])
+    df = pd.concat([df, predicted_df], axis=1)
+    df.drop(
+        labels=df.columns.difference(["image_name", "bmi", "predicted", "path"]),
+        axis=1,
+        inplace=True,
+    )
+    df["error"] = (df["predicted"] - df["bmi"]).abs()
+    df = df.sort_values(by=["error"])
+    if export_path:
+        export_path = checking_dir(dir_name=export_path)
+
+        df.to_csv(
+            path_or_buf=os.path.join(export_path, "evaluate_result.csv"),
+            index=False,
+        )
+
+        df["predicted"].describe().to_json(
+            path_or_buf=os.path.join(export_path, "predicted_stat.json"), indent=4
+        )
+
+        df["error"].describe().to_json(
+            path_or_buf=os.path.join(export_path, "error_stat.json"), indent=4
+        )
+
+    return df
+
+
+def read_bmi_from_txt(file_path):
+    """Read BMI value from txt file.
+
+    Args:
+        file_path (str): Path to txt file
+
+    Returns:
+        float: BMI value
+    """
+    f = open(file=file_path)
+    data = f.read()
+    f.close()
+    bmi = "".join(data.split())
+    return float(bmi)
+
+
+def fix_gif_image(image_path, data_frame, image_name, name, verbose=False):
+    """Convert gif file to png file.
+
+    Args:
+        image_path (str): path to gif file
+        data_frame (dataframe): dataframe contains gif file information
+        image_name (str): name of gif file
+        name (str): name to use
+        verbose (bool, optional): Show more information. Defaults to False.
+    """
+    if verbose:
+        print(f"{image_name} is a GIF image.")
+    gif = cv2.VideoCapture(image_path)
+    _, frame = gif.read()
+    original_image_path, _ = os.path.splitext(image_path)
+    new_image_path = original_image_path + ".png"
+    if verbose:
+        print(f"\tSave new file {name}.png and remove {image_name}")
+    _ = cv2.imwrite(new_image_path, frame)
+    os.remove(image_path)
+    if verbose:
+        print(f"\tReplace {image_name} with {name}.png in annotation file.")
+
+    data_frame.replace([image_name], name + ".png", inplace=True)
+
+
+def fix_b_w_image(image_path, image_name, np_img, verbose=False):
+    """Convert black and white image to RGB.
+
+    Args:
+        image_path (str): Path to image
+        image_name (str): name of image
+        np_img (Numpy Array): actual data
+        verbose (bool, optional): Show more information or not. Defaults to False.
+    """
+    if verbose:
+        print(f"{image_name} is a B&W image.")
+    bw_to_rgb = cv2.cvtColor(np_img, cv2.COLOR_GRAY2RGB)
+    if verbose:
+        print(f"\tReplace {image_name} with {np_img.shape}", end=" ")
+    _ = cv2.imwrite(image_path, bw_to_rgb)
+    np_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    if verbose:
+        print(f"to {np_img.shape}")
+
+
+def fix_rgba_image(image_path, image_name, np_img, verbose=False):
+    """Convert RGBA image to RGB.
+
+    Args:
+        image_path (str): Path to image
+        image_name (str): name of image
+        np_img (Numpy Array): actual data
+        verbose (bool, optional): Show more information or not. Defaults to False.
+    """
+    if verbose:
+        print(f"{image_name} is a RGBA image with shape {np_img.shape}.")
+    rgba_to_rgb = cv2.cvtColor(np_img, cv2.COLOR_RGBA2RGB)
+    if verbose:
+        print(f"\tReplace {image_name} with {np_img.shape}", end=" ")
+    _ = cv2.imwrite(image_path, rgba_to_rgb)
+    np_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    if verbose:
+        print(f"to {np_img.shape}")
+
+
+def checking_images_from_dir(dir_name, data_frame, verbose=False):
+    """Checking all image from a directory.
+
+    Args:
+        dir_name (str): Name of directory
+        data_frame (dataframe): Dataframe contains information
+
+    Raises:
+        Exception: In case of error
+
+    Returns:
+        list: A list of all images
+        dataframe: dataframe of information with fixed information
+    """
+    os.chdir(dir_name)
+    checked_images_list = natsort.natsorted(glob.glob("*"))
+    for file_name in tqdm.tqdm(checked_images_list):
+        try:
+            image_path = os.path.join(dir_name, file_name)
+            name, file_extension = os.path.splitext(file_name)
+            if file_extension in [".txt", ".csv"]:
+                if verbose:
+                    print(f"Find a file with {file_extension}")
+                continue
+            elif file_extension == ".gif":
+                fix_gif_image(
+                    image_path=image_path,
+                    data_frame=data_frame,
+                    image_name=file_name,
+                    name=name,
+                    verbose=verbose,
+                )
+            else:
+                img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+                if len(img.shape) < 3:  # Black and White image
+                    fix_b_w_image(
+                        image_path=image_path,
+                        image_name=file_name,
+                        np_img=img,
+                        verbose=verbose,
+                    )
+                elif len(img.shape) == 3:
+                    if img.shape[2] == 4:  # RGBA image
+                        fix_rgba_image(
+                            image_path=image_path,
+                            image_name=file_name,
+                            np_img=img,
+                            verbose=verbose,
+                        )
+                    elif img.shape[2] == 3:  # Normal image
+                        if verbose:
+                            print(f"{file_name} is ok!")
+                        continue
+                else:
+                    raise Exception(f"Something wrong with {file_name}.")
+        except Exception as e:
+            print(f"{file_name} has {e.__class__}. Message: {e}")
+            print(e)
+    checked_images_list = natsort.natsorted(glob.glob("*"))
+    return checked_images_list, data_frame
+
+
+def create_vietnamese_test_dataframe(folder, verbose=False):
+    """Create dataframe for particular test data.
+
+    Args:
+        folder (str): path to directory
+        verbose (bool, optional): Show more information or not. Defaults to False.
+
+    Returns:
+        dataframe: test dataframe
+    """
+    files_in_folder = get_all_files_in_dir(folder, must_sort=True)
+    file_path = os.path.join(folder, files_in_folder[-1])
+    bmi = read_bmi_from_txt(file_path=file_path)
+
+    bmis = [bmi for _ in range(len(files_in_folder) - 1)]
+    images = files_in_folder[:-1]
+    image_paths = [os.path.join(folder, image_name) for image_name in images]
+    data = {"path": image_paths, Config.x_col: images, Config.y_col: bmis}
+    df = pd.DataFrame(data=data)
+    if verbose:
+        print(f"{folder}\t-\t{bmi}")
+        print(df.to_markdown())
+        print()
+    return df
+
+
+def crop_image_from_coordinates(img, left, top, right, bottom):
+    return img[
+        max(0, top) : min(bottom, img.shape[0]),  # img.shape[0] is height
+        max(left, 0) : min(right, img.shape[1]),  # img.shape[1] is width
+        :,
+    ]
+
+
+def crop_face(images, folder, saving_image_dir, df, verbose=False):
+    bad_crop_images = []
+    for index, image in enumerate(images):
+        try:
+            image_path = os.path.join(folder, image)
+            np_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+            detected_faces = face_detector(np_img, 1)
+            if len(detected_faces) == 1:
+                face = detected_faces[0]
+                if verbose:
+                    print(f"Image: {np_img.shape}")
+                    print(
+                        f"Face ({face.top()},{face.bottom()},{face.left()},{face.right()})"
+                    )
+
+                cropped_image = crop_image_from_coordinates(
+                    img=np_img,
+                    left=face.left() - 50,
+                    top=face.top() - 50,
+                    right=face.right() + 50,
+                    bottom=face.bottom() + 50,
+                )
+                cropped_image_path = os.path.join(saving_image_dir, image)
+                if verbose:
+                    print(f"Save image to {cropped_image_path}")
+                _ = cv2.imwrite(cropped_image_path, cropped_image)
+                df.loc[index, "path"] = cropped_image_path
+            else:
+                bad_crop_images.append(image)
+                df.drop(index=index, inplace=True)
+                raise Exception(f"{image} has {len(detected_faces)} faces.")
+        except Exception as e:
+            print(f"{image}:{e.__class__}. {e}")
+            continue
+    if verbose:
+        print(
+            f"In '{str(folder).split('/')[-1]}':\n\tThere are {len(images) - len(bad_crop_images)}/{len(images)} images good for face detecting."
+        )
+
+
+def process_image(folder, verbose=False):
+    """Process image from a directory.
+
+    Args:
+        folder (str): Name of folder
+        verbose (bool, optional): Show more information or not. Defaults to False.
+    """
+    df = create_vietnamese_test_dataframe(folder, verbose=verbose)
+
+    images, df = checking_images_from_dir(dir_name=folder, data_frame=df)
+    images.pop()  # remove .txt file
+
+    saving_dir = checking_dir(
+        os.path.join(
+            Config.processed_data_path, "vietnamese_test", str(folder).split("/")[-1]
+        )
+    )
+    saving_image_dir = checking_dir(
+        os.path.join(saving_dir, Config.default_images_directory_name)
+    )
+
+    crop_face(images=images, folder=folder, saving_image_dir=saving_image_dir, df=df)
+
+    df.to_csv(
+        path_or_buf=os.path.join(saving_dir, Config.default_annotation_file_name),
+        index=False,
+    )
+
+    if verbose:
+        print(*images)
+        print(df)
