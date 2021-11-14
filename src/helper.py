@@ -34,44 +34,54 @@ def plot_idx(idx, dataframe):
 
 
 def plot_batch_images(
-    batch_size,
     dataframe,
+    batch_size=8,
+    fig_width=10,
+    fig_height=10,
     export_path=None,
     starting_idx=505,
     columns=["height", "weight", "BMI"],
+    name=None,
 ):
-    """Plot 16 images in the batch, along with the corresponding labels.
+    """Plot images in the batch, along with the corresponding labels.
 
     Args:
-        batch_size (Int): [description]
-        dataframe (Dataframe): [description]
+        batch_size (Int): Number of image to plot. Default is 8
+        dataframe (Dataframe): Dataframe of images and annotation
     """
 
-    fig = plt.figure(figsize=(20, batch_size))
+    fig = plt.figure(figsize=(fig_width, fig_height))
     for idx in np.arange(batch_size):
         if idx >= dataframe.shape[0]:
             break
         ax = fig.add_subplot(
-            int(batch_size ** (0.5)),
-            int(batch_size ** (0.5)),
+            int(batch_size // 2),
+            int(batch_size // 2),
             idx + 1,
             xticks=[],
             yticks=[],
         )
         plot_idx(idx + starting_idx, dataframe)
-        # if "height" in dataframe.columns and "weight" in dataframe.columns:
-        ax.set_title(
-            "BMI:{:.1f} - Pre:{:.1f} - Err:{:.4f}".format(
-                dataframe.iloc[idx + starting_idx][columns[0]],
-                dataframe.iloc[idx + starting_idx][columns[1]],
-                dataframe.iloc[idx + starting_idx][columns[2]],
+        if len(columns) == 3:
+            ax.set_title(
+                "{}:{:.1f} - {}:{:.1f} - {}:{:.4f}".format(
+                    columns[0][:3],
+                    dataframe.iloc[idx + starting_idx][columns[0]],
+                    columns[1][:3],
+                    dataframe.iloc[idx + starting_idx][columns[1]],
+                    columns[2][:3],
+                    dataframe.iloc[idx + starting_idx][columns[2]],
+                )
             )
-        )
-        # else:
-        #     ax.set_title("BMI:{:.2f}".format(dataframe.iloc[idx].BMI))
+        else:
+            ax.set_title(
+                "{}:{:.2f}".format(
+                    columns[0].upper(), dataframe.iloc[idx + starting_idx][columns[0]]
+                )
+            )
 
     if export_path:
-        plt.savefig(os.path.join(export_path, "sample_result.png"))
+        plt.savefig(os.path.join(export_path, str(name) + ".png"))
 
 
 def checking_dir(dir_name, verbose=False):
@@ -688,7 +698,9 @@ def predict_bmi(model, test_data_path, export_path=None):
     predicted_df = pd.DataFrame(result, columns=["predicted"])
     df = pd.concat([df, predicted_df], axis=1)
     df.drop(
-        labels=df.columns.difference(["image_name", "bmi", "predicted", "path"]),
+        labels=df.columns.difference(
+            ["image_name", "bmi", "predicted", "path", "subject"]
+        ),
         axis=1,
         inplace=True,
     )
@@ -872,9 +884,17 @@ def create_vietnamese_test_dataframe(folder, verbose=False):
     bmi = read_bmi_from_txt(file_path=file_path)
 
     bmis = [bmi for _ in range(len(files_in_folder) - 1)]
+    subjects = [
+        int(str(folder).split("/")[-1][:2]) for _ in range(len(files_in_folder) - 1)
+    ]
     images = files_in_folder[:-1]
     image_paths = [os.path.join(folder, image_name) for image_name in images]
-    data = {"path": image_paths, Config.x_col: images, Config.y_col: bmis}
+    data = {
+        "path": image_paths,
+        "subject": subjects,
+        Config.x_col: images,
+        Config.y_col: bmis,
+    }
     df = pd.DataFrame(data=data)
     if verbose:
         print(f"{folder}\t-\t{bmi}")
@@ -962,3 +982,30 @@ def process_image(folder, verbose=False):
     if verbose:
         print(*images)
         print(df)
+
+
+def split_bmi_class_df(df, verbose=False):
+    """Split a dataframe of BMI into 4 classes.
+
+    Args:
+        df (dataframe): Dataframe needs to be splitted
+        verbose (bool, optional): Should show details. Defaults to False.
+
+    Returns:
+        dataframe: The 4 dataframe of each class
+    """
+    if verbose:
+        print(df.head().to_markdown())
+
+    uw_df = df[df["bmi"] < 18.5]
+    h_df = df[(df["bmi"] >= 18.5) & (df["bmi"] < 25)]
+    ovw_df = df[(df["bmi"] >= 25) & (df["bmi"] < 30)]
+    obe_df = df[df["bmi"] >= 30]
+
+    if verbose:
+        print()
+        print("Under Weight:", len(uw_df))
+        print("Healthy:", len(h_df))
+        print("Overweight: ", len(ovw_df))
+        print("Obesity: ", len(obe_df))
+    return (uw_df, h_df, ovw_df, obe_df)

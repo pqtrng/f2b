@@ -118,13 +118,13 @@ Conda should be installed.
 - Train model
 
    ```sh
-   python src/train_model.py top original current False
+   python src/train.py top original current False
    ```
 
 - Evalute model
 
    ```sh
-   python evaluate_model.py top original current
+   python src/evaluate.py top original current
    ```
 
 ### Demo
